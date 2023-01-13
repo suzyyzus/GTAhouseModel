@@ -1,0 +1,206 @@
+---
+title: "What affect the sale prices of Houses in the Great Toronto Area"
+author: "Zishu Zhu, Id 1002897813"
+date: "December 4, 2020"
+output:
+  pdf_document: default
+---
+
+## I. Data Wrangling
+```{r, include=FALSE}
+library(tidyverse)
+library(kableExtra)
+```
+
+```{r, include=FALSE}
+#read the csv document
+my.data <- read_csv("real203.csv") 
+```
+
+```{r, include=FALSE}
+set.seed(1002897813)
+#randomly choose 150 rows from the whole data set
+myrand.rows <- sample(1:nrow(my.data), size = 150) #150 random row numbers
+pre.data <- my.data[myrand.rows,]
+```
+
+(a) Here are the IDs of the samples:
+
+```{r, echo=FALSE}
+pre.data$ID
+```
+
+
+
+```{r, include=FALSE}
+lotsize <- pre.data$lotwidth*pre.data$lotlength
+my.data1 <- cbind(pre.data[,c(2:8, 11)], lotsize)
+```
+
+```{r, include=FALSE}
+summary(my.data1$parking) #summary of number of parking lots
+```
+
+```{r, include=FALSE}
+boxplot(my.data1$parking) #use boxplot to find out the outliers and we can see there are three outliers
+```
+
+```{r, include=FALSE}
+which.max(my.data1$parking) #find out the largest outlier
+```
+
+```{r, include=FALSE}
+my.data2 <- my.data1[-86,] #remove the largest outlier
+which.max(my.data2$parking) #find out the second large outlier
+```
+
+```{r, include=FALSE}
+my.data3 <- my.data2[-92,] #remove the second large outlier
+which.max(my.data3$parking) #find out the third large outlier
+```
+
+```{r, include=FALSE}
+my.data4 <- my.data3[-148,] #remove the third large outlier
+```
+
+```{r, include=FALSE}
+summary(my.data4$bathroom) #summary of number of bathrooms
+```
+
+```{r, include=FALSE}
+boxplot(my.data4$bathroom) #use boxplot to find out the outliers, only one 
+which.max(my.data4$bathroom) #find out the largest outlier
+```
+
+```{r, include=FALSE}
+my.data5 <- my.data4[-98,] #remove the largest outlier
+```
+
+```{r, include=FALSE}
+summary(my.data5$bedroom) #summary of number of bedrooms
+```
+
+```{r, include=FALSE}
+boxplot(my.data5$bedroom) #use boxplot to find out the outliers and there are two of them
+which.max(my.data5$bedroom) #find out the largest outlier
+```
+
+```{r, include=FALSE}
+my.data6 <- my.data5[-23,] #remove the largest outlier
+which.max(my.data6$bedroom) #find out the second large outlier
+```
+
+```{r, include=FALSE}
+my.data7 <- my.data6[-1,] #remove the second large outlier
+updated_dataset <- my.data7[,-6]
+head(updated_dataset)
+```
+
+(b) We create a new variable with the name "lotsize" by multiplying "lotwidth" by "lotlength". The new variable "lotsize" represents the total area of the properties. We update the new data set with this new variable.
+
+(c) Now we remove some extreme observations. Firstly, we remove three houses whose number of parking spots are the largest. In those points we removed, there are over 10 parking spots in each household, and this is not a representative sample to predict the sale price. Secondly, we remove one house whose number of bathrooms is the largest. Since it differs significantly from other observations, we remove this sample from the data set. Thirdly, we remove two houses which owns the largest number of bedrooms, as those data points are also not representative. Finally, we remove one predictor which variable name is "maxsqfoot" in the data set. The reason why we remove it is that there are too many missing values in this column, so it is hard to use "maxsqfoot" to predict the sale prices of the households. To sum up, we clean the data by removing 6 cases and one predictor. We now have created a new data set called "updated_dataset".
+
+
+## II. Exploratory Data Analysis
+
+
+
+```{r, include=FALSE}
+corelat_matrix <- round(cor(updated_dataset[,-7], use = "pairwise.complete.obs"), 3)
+corelat_matrix
+```
+
+```{r, echo=FALSE}
+#table for Pairwise Correlations
+kbl(caption = "Pairwise Correlations - 7813", corelat_matrix) %>%
+  column_spec(2:8, background = "yellow") %>% kable_styling(latex_options = "hold_position")
+```
+
+
+```{r, echo = FALSE}
+#scatter plot table
+pairs(updated_dataset[,-7], main = "FIgure 1: Scatterplot Matrix - 7813")
+```
+
+```{r, include=FALSE}
+sort(corelat_matrix[1, -1], decreasing = TRUE)
+```
+
+(a) There are eleven variables in the data set. The continuous variables are sale, list, maxsqfoot, taxes, lotwidth, lotlength, and lotsize. The discrete variables are bedroom, bathroom, and parking. There is only one categorical variable "location" in the data.
+
+(b) Table 1 is the pairwise correlations for all pairs of quantitative variables in the data. We can see that from highest correlation coefficients to the lowest correlation coefficients for sale price rank is list, taxes, bathroom, bedroom, lotsize, and parking.
+
+(c) Figure 1 is the scatterplot matrix for all pairs of quantitative variables in the data set. And based on the scatterplot matrix, we can see that the variable "lotsize" is strongly violated the assumption of constant variance. We can see a "horn-shaped" pattern in the scatterplot for lotsize vs. sale price. Figure 2 is a plot of standardized residuals, and it is also horn-shaped.And this indicates that the variance of the error term is non-constant.   
+
+```{r, echo = FALSE}
+#create a linear model for sale vs. lotsize
+mod1 <- lm(sale ~ lotsize, data = updated_dataset)
+residual <- rstandard(mod1)
+
+plot(na.omit(updated_dataset$lotsize), residual, 
+     main = "Figure 2: Residual Plot of Data - 7813",
+     xlab = "Lotsize",
+     ylab = "Standardized Residuals")
+```
+
+
+## III. Methods and Model
+
+```{r, include=FALSE}
+final.data <- na.omit(updated_dataset)
+fullmodel <- lm(sale ~ ., data = final.data)
+summary(fullmodel)
+```
+
+
+
+```{r, include = FALSE}
+estimated_coefficients <- c("4.969e+04", "8.294e-01", "2.031e+04", "8.498e+03", "-1.736e+04", "2.139e+01", "8.154e+04", "4.436e-02")
+p_value <- c("0.4130", "< 2e-16", "0.1798", "0.5898", "0.0813", "0.0003", "0.0511", "0.9913") 
+
+df4 <- rbind(estimated_coefficients, p_value)
+the_data <- data.frame(df4)
+
+rownames(the_data) <- c("estimated", "p-value")
+colnames(the_data) <- c("(Intercept)", "list", "bedroom", "bathroom", "parking", "taxes", "location", "lotsize")
+the_data
+```
+```{r,echo = FALSE}
+kbl(caption = "estimated coefficients and p-value list - 7813", the_data) %>%
+  column_spec(2:9, background = "yellow") %>% kable_styling(latex_options = "hold_position")
+```
+
+
+(i) In Table 2 above, it lists the estimated values and the p-values for the corresponding t-tests for these coefficients. There are two significant t-test results, and the corresponding coefficients are list and taxes. Under the condition that everything else stays the same when the list price going up by 1 Canadian dollar, the expected sale price will increase by 0.8294 Canadian dollars. Under the condition that everything else stays the same when the taxes going up by 1 Canadian dollar, the expected sale price will increase by 0.2139 Canadian dollars.
+
+```{r, include=FALSE}
+mod.aic <- step(fullmodel, direction = "backward")
+summary(mod.aic)
+```
+
+
+(ii) The final fitted model after using backward elimination with AIC is $\hat{sale}= 62570 + 0.8384 \cdot list + 22720 \cdot bedroom - 17370 \cdot parking + 20.90 \cdot taxes + 73570 \cdot location$
+There are five predictors in this fitted model, so it does not consistent with the result by applying t-test on the full model. 
+
+```{r, include=FALSE}
+leng <- length(final.data)
+mod.bic <- step(fullmodel, direction = "backward", k=log(leng))
+summary(mod.bic)
+```
+
+(iii) The final fitted model after using backward elimination with BIC is $\hat{sale}= 62570 + 0.8384 \cdot list + 22720 \cdot bedroom - 17370 \cdot parking + 20.90 \cdot taxes + 73570 \cdot location$. The result is consistent with fitted model after using backward elimination with AIC, but not consistent with the result by applying t-test on the full model.
+
+
+
+## IV. Discussions and Limitations
+
+(a) 
+
+```{r, echo=FALSE}
+par(mfrow = c(2, 2))
+plot(mod.bic)
+```
+
+(b) There is no pattern in the first graph "Residuals vs Fitted" and the mean is zero. This indicates that the model is appropriate. In the second graph "Normal Q-Q", the overall appearance is heavy-tailed. Both the ends of the plot deviate from the straight line, but most of the points are on the straight line. Therefore, I think normal error MLR assumptions are not satisfied and there is still room for improvement. In the third graph "Scale-Location", the mean is zero, but we can see a "horn-shaped" pattern. Therefore, it violated the assumption of constant variance. From the fourth graph "Residuals vs Leverage", no case is outside of Cook’s distance. So, we can conclude that there is almost no case that can be influential to the regression result.
+
+(c) The next steps I would take towards finding a valid final model are as follow. Firstly, we can apply a transformation on y to achieve normality and constant variance. Secondly, we can also use regression validation to analyze the goodness of fit of the regression.  
