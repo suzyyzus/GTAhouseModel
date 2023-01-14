@@ -1,5 +1,7 @@
 # What affect the sale prices of Houses in the Great Toronto Area :houses::houses::houses:
 
+First-time home buying is currently a major federal issue. Prices for detached houses have been at an all time high during the current COVID-19 period. Data was obtained from the Toronto Real Estate Board (TREB) on detached houses in two separate neighbourhoods- one in the city of Toronto and another in the city of Mississauga.
+
 Highlight of the Code
 
 :round_pushpin::round_pushpin::round_pushpin:
